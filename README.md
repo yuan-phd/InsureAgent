@@ -10,6 +10,10 @@ InsureAgent demonstrates how to distil agentic reasoning from a large teacher mo
 &nbsp;
 [![Streamlit](https://img.shields.io/badge/Streamlit-Live%20Demo-red)](https://insureagent.streamlit.app)
 
+**Streamlit Cloud (live demo)**  
+→ https://insureagent.streamlit.app/  
+Runs Teacher model directly via OpenAI API.
+
 ---
 
 ## Evaluation Results
@@ -23,12 +27,6 @@ Evaluated on 19 held-out test cases covering approvals, denials (not covered, po
 | Tool sequence accuracy | 100.0% | 83.2% | 83% |
 
 The student model runs fully locally on a single GPU, reducing inference cost by ~90% compared to the teacher API. Tool sequence gap is attributable to the 1B parameter limit and is addressable with a larger base model or output constraints.
-
-## Running the Demo
-
-**Streamlit Cloud (live demo)**  
-→ https://insureagent.streamlit.app/  
-Runs Teacher model directly via OpenAI API.
 
 ---
 
