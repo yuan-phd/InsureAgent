@@ -43,4 +43,10 @@ jobs:
         run: pytest tests/test_agent.py -v
 
       - name: Validate training data schema
-        run: python -c "from data.validation import validate_traces; r = validate_traces('data/train.jsonl'); print(f'Valid: {r[\"valid\"]}/{r[\"total\"]}'); assert r['error_rate'] == 0, f'Validation failed: {r}'"
+        run: |
+          python - <<'EOF'
+          from data.validation import validate_traces
+          r = validate_traces("data/train.jsonl")
+          print(f"Valid: {r['valid']}/{r['total']}")
+          assert r["error_rate"] == 0, f"Validation failed: {r}"
+          EOF
