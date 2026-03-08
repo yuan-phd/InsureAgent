@@ -9,6 +9,7 @@ datasets>=2.20.0
 huggingface-hub>=0.24.0
 sentencepiece>=0.2.0
 protobuf>=4.25.0
+openai>=1.30.0
 
 # ── API / Web ──────────────────────────────────────────────────
 fastapi>=0.111.0
