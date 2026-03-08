@@ -67,6 +67,11 @@ def validate_traces(jsonl_path: str) -> dict:
 
 
 if __name__ == "__main__":
-    report = validate_traces("data/train.jsonl")
+    import os
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(base_dir, "data", "train.jsonl")
+    report = validate_traces(path)
     print(f"Valid: {report['valid']}/{report['total']}")
     print(f"Error rate: {report['error_rate']:.1%}")
+    if report["errors"]:
+        print("Sample errors:", report["errors"])
