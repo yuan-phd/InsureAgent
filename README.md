@@ -4,6 +4,12 @@
 
 InsureAgent demonstrates how to distil agentic reasoning from a large teacher model (GPT-4o mini) into a compact student model (Llama-3.2-1B + LoRA) for insurance claims processing. The student model runs fully locally, addressing data sovereignty requirements in regulated industries.
 
+[![CI](https://github.com/yuan-phd/insureagent/actions/workflows/ci.yml/badge.svg)](https://github.com/yuan-phd/insureagent/actions/workflows/ci.yml)
+&nbsp;
+[![HuggingFace](https://img.shields.io/badge/HuggingFace-yuanphd%2Finsureagent--lora--v2-yellow)](https://huggingface.co/yuanphd/insureagent-lora-v2)
+&nbsp;
+[![Streamlit](https://img.shields.io/badge/Streamlit-Live%20Demo-red)](https://insureagent.streamlit.app)
+
 ---
 
 ## Evaluation Results
@@ -16,7 +22,13 @@ Evaluated on 19 held-out test cases covering approvals, denials (not covered, po
 | Payout precision | 78.9% | 73.7% | 93% |
 | Tool sequence accuracy | 100.0% | 83.2% | 83% |
 
-The student model runs fully locally on a single GPU, reducing inference cost by ~90% compared to the teacher API.
+The student model runs fully locally on a single GPU, reducing inference cost by ~90% compared to the teacher API. Tool sequence gap is attributable to the 1B parameter limit and is addressable with a larger base model or output constraints.
+
+## Running the Demo
+
+**Streamlit Cloud (live demo)**  
+→ https://insureagent.streamlit.app/  
+Runs Teacher model directly via OpenAI API.
 
 ---
 
@@ -42,69 +54,116 @@ Verdict: APPROVED / DENIED + Payout amount
 
 ---
 
+## Engineering Stack
+
+| Layer | Technology |
+|---|---|
+| Inference API | FastAPI + Pydantic |
+| Containerisation | Docker + docker-compose |
+| Fine-tuning | TRL + PEFT (LoRA), Google Colab T4 |
+| Data versioning | Databricks Unity Catalog (Delta Lake) |
+| Experiment tracking | MLflow (local + Databricks) |
+| Data validation | Pandera schema checks |
+| Monitoring | EvidentlyAI offline drift detection |
+| Load testing | Locust (5 concurrent users, 0.3 RPS) |
+| Logging | structlog (JSON in production) |
+| CI/CD | GitHub Actions |
+
+---
+
 ## Project Structure
 
 ```
 insureagent/
 ├── agent/
-│   ├── loop.py            # ReAct agent loop
-│   ├── parser.py          # Tool call parser (JSON, kwargs, positional)
-│   └── prompts.py         # System prompt + tool definitions
+│   ├── loop.py                  # ReAct agent loop
+│   ├── parser.py                # Tool call parser (JSON, kwargs, positional)
+│   └── prompts.py               # System prompt + tool definitions
+├── api/
+│   ├── main.py                  # FastAPI app
+│   ├── inference.py             # Teacher + Student inference, model cache
+│   └── schemas.py               # Pydantic request/response schemas
 ├── tools/
-│   ├── database.py        # Policy lookup (SQLite, 30 policyholders)
-│   ├── rules.py           # Coverage rules engine
-│   └── calculator.py      # Payout calculator
+│   ├── database.py              # Policy lookup (SQLite, 30 policyholders)
+│   ├── rules.py                 # Coverage rules engine
+│   └── calculator.py            # Payout calculator
 ├── data/
-│   ├── seeds.py           # 15 seed scenarios
-│   ├── generate.py        # Teacher trace generation (225 traces)
-│   ├── generate_extra.py  # Additional DENIED traces (120 traces)
-│   └── test_cases.py      # 19 held-out evaluation cases
-├── evaluation/
-│   ├── evaluate.py        # Teacher + Student evaluation runner
-│   └── results.json       # Final evaluation results
+│   ├── generate.py              # Teacher trace generation (225 traces)
+│   ├── generate_extra.py        # Additional DENIED traces (120 traces)
+│   ├── validation.py            # Pandera schema validation
+│   └── test_cases.py            # 19 held-out evaluation cases
 ├── training/
-│   └── train.py           # LoRA fine-tuning (run on Google Colab T4)
-└── demo/
-    └── demo.py            # Interactive CLI demo
+│   ├── train.py                 # LoRA fine-tuning (local + Databricks backend)
+│   └── data_loader.py           # Dataset loader (local + Databricks backend)
+├── evaluation/
+│   ├── student_eval.py          # Student model evaluation
+│   ├── benchmark.py             # Quantisation benchmark (FP16 vs INT8)
+│   ├── monitor.py               # EvidentlyAI offline monitoring
+│   ├── results.json             # Evaluation results
+│   └── locust_results.md        # Load test results
+├── config/
+│   └── config.yaml              # Centralised hyperparameter config
+├── utils/
+│   └── logger.py                # structlog structured logging
+├── tests/
+│   ├── test_tools.py            # Unit tests: calculator + rules
+│   ├── test_parser.py           # Unit tests: teacher + student parser
+│   ├── test_validation.py       # Unit tests: data validation
+│   ├── test_agent.py            # Integration tests: agent loop (mock LLM)
+│   └── locustfile.py            # Locust load test
+├── demo/
+│   ├── streamlit_app.py         # Streamlit Cloud demo (direct run_agent)
+│   └── streamlit_app_fastapi.py # Streamlit demo via FastAPI (engineering ref)
+├── Dockerfile
+├── docker-compose.yml
+└── .env.example
 ```
 
 ---
-
-## Running the demo
-
-**Streamlit Cloud (live demo)**
-→ [demo link]
-Runs Teacher model directly via OpenAI API.
 
 **Local full stack (Docker)**
 ```bash
-cp .env.example .env  # fill in OPENAI_API_KEY
+cp .env.example .env   # add OPENAI_API_KEY and HF_TOKEN
 docker compose up
 ```
-FastAPI server: http://localhost:8000
-MLflow UI:      http://localhost:5001
+
+| Service | URL |
+|---|---|
+| FastAPI inference server | http://localhost:8000 |
+| API docs (Swagger) | http://localhost:8000/docs |
+| MLflow experiment tracking | http://localhost:5001 |
+
+**Example API call:**
+```bash
+curl -X POST http://localhost:8000/process_claim \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "P-1001",
+    "claim_text": "My car windshield was cracked by hail.",
+    "claimed_amount": 1200,
+    "model": "teacher"
+  }'
+```
 
 ---
 
-## Setup
+## Setup (local, without Docker)
 
 ```bash
 git clone https://github.com/yuan-phd/insureagent
 cd insureagent
 python -m venv venv
 source venv/bin/activate
-pip install openai python-dotenv
+pip install -r requirements.txt
 ```
 
 Create a `.env` file:
-
 ```
 OPENAI_API_KEY=your_openai_key
-HF_TOKEN=your_huggingface_token
+HF_TOKEN=your_huggingface_token   # only needed for student model
 ```
 
 Initialise the database:
-
 ```bash
 python tools/database.py
 ```
@@ -113,29 +172,39 @@ python tools/database.py
 
 ## Usage
 
-**Run the teacher agent (GPT-4o mini):**
-
 ```bash
-python demo/demo.py
-```
+# Run Streamlit demo
+streamlit run demo/streamlit_app.py
 
-**Generate training data:**
-
-```bash
+# Generate training data
 python data/generate.py
-```
 
-**Run evaluation:**
+# Fine-tune student model (requires GPU)
+python training/train.py --config config/config.yaml
 
-```bash
-python evaluation/evaluate.py
+# Evaluate student model
+python evaluation/student_eval.py --config config/config.yaml
+
+# Run quantisation benchmark (FP16 vs INT8, requires GPU)
+python evaluation/benchmark.py --config config/config.yaml
+
+# Run unit tests
+pytest tests/ -v
+
+# Load test (requires FastAPI server running)
+locust -f tests/locustfile.py --host http://localhost:8000
 ```
 
 ---
 
 ## Training
 
-Fine-tuning was performed on Google Colab (T4 GPU) using TRL + PEFT.
+Fine-tuning was performed on Google Colab (T4 GPU) using TRL + PEFT. Training backend is switchable between local and Databricks via a single flag.
+
+```bash
+python training/train.py --backend local       # local / Colab
+python training/train.py --backend databricks  # Databricks Unity Catalog
+```
 
 | Parameter | Value |
 |---|---|
@@ -147,9 +216,24 @@ Fine-tuning was performed on Google Colab (T4 GPU) using TRL + PEFT.
 | Training data | 345 traces |
 | Epochs | 5 |
 | Learning rate | 1e-4 |
-| Final loss | 0.121 |
+| Loss (start → end) | 1.698 → 0.121 |
 
 The trained adapter is available at: [yuanphd/insureagent-lora-v2](https://huggingface.co/yuanphd/insureagent-lora-v2)
+
+---
+
+## Load Test Results
+
+Tested with Locust, 5 concurrent users, Teacher model (GPT-4o mini).
+
+| Metric | Value |
+|---|---|
+| RPS | 0.3 |
+| Median latency | 6,000ms |
+| P95 latency | 52,000ms |
+| Failure rate | 22% |
+
+Failures are caused by OpenAI API timeout under concurrent load — each claim requires 3 sequential API calls. Student model inference eliminates this bottleneck by running fully locally. Full results: [`evaluation/locust_results.md`](evaluation/locust_results.md)
 
 ---
 
@@ -161,13 +245,16 @@ The trained adapter is available at: [yuanphd/insureagent-lora-v2](https://huggi
 
 **Student runs fully locally.** Once fine-tuned, the student model requires no external API calls, making it suitable for regulated environments with strict data residency requirements.
 
+**Databricks-ready training pipeline.** Data versioning and experiment tracking are backed by Databricks Unity Catalog and MLflow, matching production ML infrastructure used at scale.
+
 ---
 
 ## Future Work
 
-- Increase training data to 500+ traces with stricter tool sequence validation
 - Evaluate Llama-3.2-3B as base model to improve tool sequence accuracy
-- Add structured output constraints to enforce JSON tool call format during inference
+- Add structured output constraints to enforce JSON tool call format at inference time
+- Knowledge graph integration (Neo4j) for complex multi-policy claim reasoning
+- Continued pre-training on insurance domain corpus
 
 ---
 
