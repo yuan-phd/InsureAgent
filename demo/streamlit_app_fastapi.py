@@ -118,7 +118,7 @@ if run_button:
         if verdict == "APPROVED":
             st.success(f"✅ **APPROVED** · Payout: **${payout}**")
         elif verdict == "DENIED":
-            st.error(f"❌ **DENIED** · Payout: **$0**")
+            st.error("❌ **DENIED** · Payout: **$0**")
         else:
             st.warning("⚠️ No verdict reached.")
 

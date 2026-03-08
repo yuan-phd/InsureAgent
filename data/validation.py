@@ -1,5 +1,4 @@
 import json
-import pandas as pd
 
 def validate_traces(jsonl_path: str) -> dict:
     """Validate all traces in a jsonl file. Returns summary report."""

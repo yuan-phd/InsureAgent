@@ -132,7 +132,7 @@ def main():
         # Generate variations
         variations = generate_variations(seed, client)
         if not variations:
-            print(f"  Skipping — no variations generated.")
+            print("  Skipping — no variations generated.")
             continue
 
         print(f"  Generated {len(variations)} variations. Running agent...")
@@ -189,7 +189,7 @@ def main():
             f.write(json.dumps(item) + '\n')
 
     print(f"\n{'='*50}")
-    print(f"DONE")
+    print("DONE")
     print(f"Accepted: {len(accepted)}")
     print(f"Rejected: {len(rejected)}")
     print(f"Rejection reasons: {dict(rejection_reasons)}")

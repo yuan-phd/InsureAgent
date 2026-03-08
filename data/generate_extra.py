@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from agent.loop import run_agent
 from data.generate import (
     generate_variations, validate_trace,
-    format_for_training, extract_verdict
+    format_for_training
 )
 
 load_dotenv()
@@ -116,7 +116,7 @@ def main():
                     claimed_amount=claimed_amount,
                     client=client
                 )
-            except Exception as e:
+            except Exception:
                 rejected_count += 1
                 continue
 

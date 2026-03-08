@@ -99,7 +99,6 @@ TOOL_REGISTRY = {
 # ── PARSER ────────────────────────────────────────────────────────────────────
 
 def parse_action(text: str):
-    import re
     match = re.search(r'Action:\s*(\w+)\s*\((.*)\)', text, re.DOTALL)
     if not match:
         return None, None

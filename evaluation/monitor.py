@@ -64,7 +64,7 @@ def check_accuracy_regression(current: pd.DataFrame, baseline: pd.DataFrame,
         "regression_detected": delta > threshold,
     }
 
-    print(f"\nAccuracy check:")
+    print("\nAccuracy check:")
     print(f"  Baseline: {baseline_acc:.1%}")
     print(f"  Current:  {current_acc:.1%}")
     print(f"  Delta:    {delta:+.1%}  (threshold: -{threshold:.1%})")
