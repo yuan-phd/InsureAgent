@@ -70,6 +70,7 @@ Tested with Locust, 5 concurrent users, Teacher model (GPT-4o mini).
 | Median latency | 6,000ms |
 | P95 latency | 52,000ms |
 | Failure rate | 22% |
+
 Failures are caused by OpenAI API timeout under concurrent load — each claim requires 3 sequential API calls. Student model inference eliminates this bottleneck by running fully locally. Full results: [`evaluation/locust_results.md`](evaluation/locust_results.md)
 
 ---
