@@ -52,6 +52,7 @@ The student model runs fully locally on a single GPU, reducing inference cost by
 | Epochs | 5 |
 | Learning rate | 1e-4 |
 | Loss (start → end) | 1.698 → 0.121 |
+
 ![Evaluation](docs/images/loss_curve.png)
 
 The trained adapter is available at: [yuanphd/insureagent-lora-v2](https://huggingface.co/yuanphd/insureagent-lora-v2)
