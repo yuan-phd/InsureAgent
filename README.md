@@ -32,7 +32,10 @@ The student model runs fully locally on a single GPU, reducing inference cost by
 |---|---|
 | Inference API | FastAPI + Pydantic |
 | Containerisation | Docker + docker-compose |
+| Kubernetes | minikube · kubectl · NodePort service |
 | Fine-tuning | TRL + PEFT (LoRA), Google Colab T4 |
+| RL post-training | GRPO (TRL GRPOTrainer), verifiable reward |
+| NLP pre-filter | Zero-shot risk classifier (DeBERTa-v3-small) |
 | Data versioning | Databricks Unity Catalog (Delta Lake) |
 | Experiment tracking | MLflow (local + Databricks) |
 | Data validation | Pandera schema checks |
@@ -81,6 +84,9 @@ Failures are caused by OpenAI API timeout under concurrent load — each claim r
 User Claim
     │
     ▼
+Risk Classifier (DeBERTa zero-shot → high / medium / low)
+    │
+    ▼
 Agent Loop (ReAct: Thought → Action → Observation)
     │
     ├── lookup_policy()     →  SQLite database (30 policyholders)
@@ -103,10 +109,12 @@ Verdict: APPROVED / DENIED + Payout amount
 insureagent/
 ├── agent/
 │   ├── loop.py                  # ReAct agent loop
+│   ├── classifier.py            # Zero-shot NLP risk classifier (DeBERTa)
 │   ├── parser.py                # Tool call parser (JSON, kwargs, positional)
 │   └── prompts.py               # System prompt + tool definitions
 ├── api/
 │   ├── main.py                  # FastAPI app
+│   ├── main_kube.py             # Lightweight FastAPI for Kubernetes demo
 │   ├── inference.py             # Teacher + Student inference, model cache
 │   └── schemas.py               # Pydantic request/response schemas
 ├── tools/
@@ -123,7 +131,7 @@ insureagent/
 │   ├── train_rl.py              # GRPO RL post-training (verifiable rewards)
 │   └── data_loader.py           # Dataset loader (local + Databricks backend)
 ├── evaluation/
-│   ├── student_eval.py          # Student model evaluation
+│   ├── student_eval.py          # Student model evaluation + risk breakdown
 │   ├── benchmark.py             # Quantisation benchmark (FP16 vs INT8)
 │   ├── monitor.py               # EvidentlyAI offline monitoring
 │   ├── results.json             # Evaluation results
@@ -132,16 +140,19 @@ insureagent/
 │   └── config.yaml              # Centralised hyperparameter config
 ├── utils/
 │   └── logger.py                # structlog structured logging
+├── k8s/
+│   ├── deployment.yaml          # Kubernetes deployment (1 replica)
+│   └── service.yaml             # Kubernetes NodePort service
 ├── tests/
 │   ├── test_tools.py            # Unit tests: calculator + rules
 │   ├── test_parser.py           # Unit tests: teacher + student parser
 │   ├── test_validation.py       # Unit tests: data validation
-│   ├── test_agent.py            # Integration tests: agent loop (mock LLM)
-│   └── locustfile.py            # Locust load test
+│   └── test_agent.py            # Integration tests: agent loop (mock LLM)
 ├── demo/
 │   ├── streamlit_app.py         # Streamlit Cloud demo (direct run_agent)
 │   └── streamlit_app_fastapi.py # Streamlit demo via FastAPI (engineering ref)
 ├── Dockerfile
+├── Dockerfile.kube              # Lightweight image for Kubernetes demo
 ├── docker-compose.yml
 └── .env.example
 ```
@@ -172,6 +183,15 @@ curl -X POST http://localhost:8000/process_claim \
     "claimed_amount": 1200,
     "model": "teacher"
   }'
+```
+
+**Kubernetes (minikube)**
+```bash
+minikube start --driver=docker
+eval $(minikube docker-env)
+docker build -f Dockerfile.kube -t insureagent-kube:latest .
+kubectl apply -f k8s/
+minikube service insureagent --url
 ```
 
 ---
@@ -280,6 +300,8 @@ GRPO generates N candidate traces per claim (default: 4), scores each with the r
 **Every tool call executes against real data.** Tool results are never hallucinated — each Observation is the output of a real function call against a real SQLite database and rules engine.
 
 **Two-stage training pipeline.** SFT teaches the student to replicate teacher behaviour. GRPO then optimises directly for correctness using verifiable rewards, allowing the student to improve beyond what the teacher demonstrated.
+
+**Zero-shot NLP risk classifier.** A DeBERTa-v3-small NLI model classifies each claim as high / medium / low risk before the agent loop runs. It is a logging and analysis layer only — it does not influence the agent's verdict. Used in evaluation to correlate risk level with agent accuracy.
 
 **Evaluation uses three isolated metrics.** Verdict accuracy, payout precision, and tool sequence accuracy are measured independently, enabling systematic error categorisation.
 
