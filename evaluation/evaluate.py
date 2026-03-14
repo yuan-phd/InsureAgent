@@ -70,12 +70,13 @@ def evaluate_model(client, model_label: str, delay: float = 0.5) -> list:
         print(f"  Case {i+1}/{len(TEST_CASES)}: {case['claim_text'][:45]}...")
 
         try:
-            trace = run_agent(
+            result = run_agent(
                 claim_text=case["claim_text"],
                 user_id=case["user_id"],
                 claimed_amount=case["claimed_amount"],
                 client=client
             )
+            trace = result["trace"]
         except Exception as e:
             print(f"    ERROR: {e}")
             results.append({

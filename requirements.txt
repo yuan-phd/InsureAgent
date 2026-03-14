@@ -11,6 +11,7 @@ sentencepiece>=0.2.0
 protobuf>=4.25.0
 openai>=1.30.0
 structlog
+sentence-transformers
 
 # ── API / Web ──────────────────────────────────────────────────
 fastapi>=0.111.0

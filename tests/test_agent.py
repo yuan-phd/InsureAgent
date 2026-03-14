@@ -47,7 +47,8 @@ class TestAgentLoop:
             "Verdict: APPROVED\nPayout: $700\nReasoning: Hail damage is covered. After deductible of $500, payout is $700.",
         ]
         client = make_mock_client(responses)
-        trace = run_agent("Hail cracked my windshield.", "P-1001", 1200, client)
+        result = run_agent("Hail cracked my windshield.", "P-1001", 1200, client)
+        trace = result["trace"]
 
         # Trace should contain assistant messages
         assistant_msgs = [m for m in trace if m["role"] == "assistant"]
@@ -66,7 +67,8 @@ class TestAgentLoop:
             "Verdict: DENIED\nPayout: $0\nReasoning: Flood is not covered under Basic plan.",
         ]
         client = make_mock_client(responses)
-        trace = run_agent("Basement flooded.", "P-1019", 6000, client)
+        result = run_agent("Basement flooded.", "P-1019", 6000, client)
+        trace = result["trace"]
 
         assistant_msgs = [m for m in trace if m["role"] == "assistant"]
         final = assistant_msgs[-1]["content"]
@@ -85,7 +87,8 @@ class TestAgentLoop:
             'Thought: Look up policy.\nAction: lookup_policy({"user_id": "P-1001"})\nObservation: {"plan_type": "Premium"}',
         ]
         client = make_mock_client(responses)
-        trace = run_agent("Hail claim.", "P-1001", 1200, client)
+        result = run_agent("Hail claim.", "P-1001", 1200, client)
+        trace = result["trace"]
 
         system_msgs = [m for m in trace if m["role"] == "system"]
         assert any("REJECTED" in m["content"] for m in system_msgs)
@@ -97,7 +100,8 @@ class TestAgentLoop:
             "Verdict: DENIED\nPayout: $0\nReasoning: Could not process.",
         ]
         client = make_mock_client(responses)
-        trace = run_agent("Some claim.", "P-1001", 1000, client)
+        result = run_agent("Some claim.", "P-1001", 1000, client)
+        trace = result["trace"]
 
         user_msgs = [m for m in trace if m["role"] == "user"]
         error_msgs = [m for m in user_msgs if "unknown tool" in m["content"].lower()]
@@ -109,7 +113,8 @@ class TestAgentLoop:
             "Verdict: APPROVED\nPayout: $0\nReasoning: Quick decision.",
         ]
         client = make_mock_client(responses)
-        trace = run_agent("Quick claim.", "P-1001", 100, client)
+        result = run_agent("Quick claim.", "P-1001", 100, client)
+        trace = result["trace"]
         assert trace[0]["role"] == "user"
 
     def test_max_steps_respected(self):
@@ -119,7 +124,21 @@ class TestAgentLoop:
             'Thought: Still thinking.\nAction: lookup_policy({"user_id": "P-1001"})',
         ] * 10  # more than max_steps
         client = make_mock_client(responses)
-        trace = run_agent("Claim.", "P-1001", 1000, client, max_steps=3)
+        result = run_agent("Claim.", "P-1001", 1000, client, max_steps=3)
+        trace = result["trace"]
 
         assistant_msgs = [m for m in trace if m["role"] == "assistant"]
         assert len(assistant_msgs) <= 3
+
+    def test_run_agent_returns_risk_level(self):
+        """run_agent() should return risk_level and risk_confidence from classifier."""
+        responses = [
+            "Verdict: APPROVED\nPayout: $700\nReasoning: Covered.",
+        ]
+        client = make_mock_client(responses)
+        result = run_agent("My house was destroyed by fire.", "P-1001", 5000, client)
+
+        assert "risk_level" in result
+        assert result["risk_level"] in ["high", "medium", "low"]
+        assert "risk_confidence" in result
+        assert 0.0 <= result["risk_confidence"] <= 1.0

@@ -83,12 +83,13 @@ if run_button:
 
             with st.spinner("Processing claim..."):
                 try:
-                    trace = run_agent(
+                    result = run_agent(
                         claim_text=claim_text,
                         user_id=user_id,
                         claimed_amount=float(claimed_amount),
                         client=client
                     )
+                    trace = result["trace"]
                 except Exception as e:
                     st.error(f"Error: {e}")
                     st.stop()

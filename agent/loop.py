@@ -21,6 +21,7 @@ from tools.rules import check_rules
 from tools.calculator import calculate_payout
 from agent.parser import parse_action
 from agent.prompts import SYSTEM_PROMPT
+from agent.classifier import classify_risk
 
 load_dotenv()
 
@@ -31,11 +32,20 @@ TOOL_REGISTRY = {
 }
 
 def run_agent(claim_text: str, user_id: str, claimed_amount: float,
-              client, max_steps: int = 8) -> list:
+              client, max_steps: int = 8) -> dict:
     """
     Run the full agentic loop for a single claim.
-    Returns the full conversation trace as a list of message dicts.
+
+    Returns a dict with:
+      - trace (list): full conversation trace
+      - risk_level (str): "high", "medium", or "low"
+      - risk_confidence (float): classifier confidence
     """
+
+    # ── Risk classification (before agent loop, logging only) ──
+    risk_result = classify_risk(claim_text)
+    risk_level      = risk_result["risk_level"]
+    risk_confidence = risk_result["confidence"]
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -91,7 +101,11 @@ def run_agent(claim_text: str, user_id: str, claimed_amount: float,
         trace.append({"role": "user", "content": observation})
         messages.append({"role": "user", "content": observation})
 
-    return trace
+    return {
+        "trace":            trace,
+        "risk_level":       risk_level,
+        "risk_confidence":  risk_confidence,
+    }
 
 
 def print_trace(trace: list):
@@ -108,10 +122,11 @@ if __name__ == "__main__":
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     # Test: valid hail claim
-    trace = run_agent(
+    result = run_agent(
         claim_text="My car windshield was cracked by hail during a storm last Tuesday.",
         user_id="P-1001",
         claimed_amount=1200,
         client=client
     )
-    print_trace(trace)
+    print(f"Risk level: {result['risk_level']} (confidence: {result['risk_confidence']})")
+    print_trace(result["trace"])

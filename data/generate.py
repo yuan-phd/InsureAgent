@@ -145,12 +145,13 @@ def main():
                 continue
 
             try:
-                trace = run_agent(
+                result = run_agent(
                     claim_text=claim_text,
                     user_id=seed["user_id"],
                     claimed_amount=claimed_amount,
                     client=client
                 )
+                trace = result["trace"]
             except Exception as e:
                 print(f"  Variation {j+1}: ERROR — {e}")
                 rejected.append({
