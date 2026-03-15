@@ -230,20 +230,21 @@ def parse_action(text: str):
 
 # ── MODEL LOADING ─────────────────────────────────────────────────────────────
 
-def load_student_model(model_name: str, adapter_path: str, hf_token: str):
+def load_student_model(model_name: str, adapter_path: str, hf_token: str): 
     print(f"Loading base model: {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name, token=hf_token)
-    tokenizer.pad_token = tokenizer.eos_token
-
+    tokenizer.pad_token = tokenizer.eos_token   # Llama has no PAD, use EOS token as padding
+    
+    # base model
     base_model = AutoModelForCausalLM.from_pretrained(
-        model_name,
+        model_name,     # "meta-llama/Llama-3.2-1B-Instruct"
         token=hf_token,
         torch_dtype=torch.float16,
         device_map="auto",
     )
 
     print(f"Loading adapter: {adapter_path}")
-    model = PeftModel.from_pretrained(base_model, adapter_path, token=hf_token)
+    model = PeftModel.from_pretrained(base_model, adapter_path, token=hf_token)     # LoRA, path from config/config.yaml
     model.eval()
     print("Student model ready.")
     return model, tokenizer

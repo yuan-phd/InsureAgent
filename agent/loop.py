@@ -58,7 +58,7 @@ def run_agent(claim_text: str, user_id: str, claimed_amount: float,
 
     trace = [messages[1]]  # start trace with user message only
 
-    for step in range(max_steps):
+    for step in range(max_steps): # ReAct loop max 8
         # Call the LLM
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -71,11 +71,11 @@ def run_agent(claim_text: str, user_id: str, claimed_amount: float,
         messages.append({"role": "assistant", "content": model_output})
 
         # Check if model has reached a verdict
-        if "Verdict:" in model_output:
+        if "Verdict:" in model_output: # Guardrails
             break
 
         # Detect hallucinated observations — model should never output these
-        if "Observation:" in model_output:
+        if "Observation:" in model_output: # hallucination
             trace.append({
                 "role": "system",
                 "content": "[REJECTED: model hallucinated Observation]"
@@ -85,13 +85,13 @@ def run_agent(claim_text: str, user_id: str, claimed_amount: float,
         # Parse tool call
         tool_name, args = parse_action(model_output)
 
-        if tool_name is None:
+        if tool_name is None: # 3 types of error
             observation = "Observation: Error — no valid Action found. You must output an Action."
         elif tool_name not in TOOL_REGISTRY:
             observation = f"Observation: Error — unknown tool '{tool_name}'."
         elif args is None:
             observation = f"Observation: Error — could not parse arguments for '{tool_name}'."
-        else:
+        else: # observation feed
             try:
                 result = TOOL_REGISTRY[tool_name](**args)
                 observation = f"Observation: {json.dumps(result)}"

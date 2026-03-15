@@ -31,7 +31,7 @@ with st.sidebar:
     st.info("Llama-3.2-1B-Instruct\nMeta · Fine-tuned via LoRA (rank-16)\nyuanphd/insureagent-lora-v2")
 
     st.markdown("**Distillation**")
-    st.success("345 agentic traces · 5 epochs\n3.4M / 1.24B trainable params (0.275%)\nLoRA · PEFT · TRL")
+    st.success("345 agentic traces · 5 epochs\n3.4M / 1.24B trainable params (0.275%)\nLoRA · PEFT · TRL · GRPO")
 
     st.markdown("**Evaluation (19 held-out cases)**")
     st.markdown("""
@@ -39,7 +39,7 @@ with st.sidebar:
 |---|---|---|
 | Verdict | 89.5% | 80.1% |
 | Payout | 78.9% | 73.7% |
-| Tool seq | 100% | 63.2% |
+| Tool seq | 100% | 83.2% |
 """)
 
     st.markdown("**~90% inference cost reduction**")
