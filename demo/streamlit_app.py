@@ -33,7 +33,7 @@ with st.sidebar:
     st.markdown("**Distillation**")
     st.success("345 agentic traces · 5 epochs\n3.4M / 1.24B trainable params (0.275%)\nLoRA · PEFT · TRL · GRPO")
 
-    st.markdown("**Evaluation (19 held-out cases)**")
+    st.markdown("**Evaluation (held-out cases)**")
     st.markdown("""
 | Metric | Teacher | Student |
 |---|---|---|
