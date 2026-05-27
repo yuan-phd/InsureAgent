@@ -16,6 +16,10 @@ Runs Teacher model directly via OpenAI API.
 
 ---
 
+![Architecture](docs/images/architecture.png)
+
+---
+
 ## Evaluation Results
 
 Evaluated on held-out test cases covering approvals, denials (not covered, policy inactive, claim limit), and edge cases (below deductible, exceeds annual cap).
