@@ -16,7 +16,7 @@ Runs Teacher model directly via OpenAI API.
 
 ---
 
-![Architecture](docs/images/architecture.png)
+![Architecture](architecture.png)
 
 ---
 
